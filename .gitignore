@@ -1,1 +1,3 @@
 /venv
+# exclude the env file
+.env
