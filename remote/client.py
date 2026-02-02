@@ -3,6 +3,7 @@ import websockets
 import json
 import ssl
 import os
+from dotenv import set_key, find_dotenv
 from .config import settings
 class WebOSClient:
 
@@ -16,84 +17,108 @@ class WebOSClient:
         self.ssl_context.check_hostname = False
         self.ssl_context.verify_mode = ssl.CERT_NONE
 
+    def save_client_key(self,new_key: str):
+        """Update or add CLIENT_KEY to .env using python-dotenv"""
+        dotenv_path = find_dotenv(usecwd=True)  # Finds .env in current dir or parents
+        if not dotenv_path:
+            dotenv_path = os.path.join(os.getcwd(), ".env")
+            # Create empty .env if missing
+            open(dotenv_path, 'a').close()
+
+        # set_key returns (success, key, old_value)
+        success, key, old = set_key(
+            dotenv_path=dotenv_path,
+            key_to_set="CLIENT_KEY",
+            value_to_set=new_key,
+            quote_mode="always",   
+            export=False
+        )
+
+        if success:
+            print(f"🎉 Updated CLIENT_KEY in .env → {new_key}")
+            self.client_key = new_key
+            settings.client_key = new_key  # if you want settings obj updated
+        else:
+            print("Failed to update .env – check permissions or path")
+
     async def connect(self):
         self.ws = await websockets.connect(self.uri, ping_interval=20, ping_timeout=20, ssl=self.ssl_context)
         print(f"Connected to {self.uri}!")
 
         # Register (with key if we have it)
         register_msg = {
-"type": "register",
-"id": "register_0",
-"payload": {
-"forcePairing": False,
-"pairingType": "PROMPT",
-"manifest": {
-    "manifestVersion": 1,
-    "appVersion": "1.1",
-    "signed": {
-        "created": "20140509",
-        "appId": "com.lge.test",
-        "vendorId": "com.lge",
-        "localizedAppNames": {
-            "": "LG Remote App",
-            "ko-KR": "LG 리모컨 앱",
-            "zxx-XX": "LG Rэмотэ Aпп"
-        },
-        "localizedVendorNames": {"": "LG Electronics"},
-        "permissions": [
-            "TEST_SECURE",
-            "CONTROL_INPUT_TEXT",
-            "CONTROL_MOUSE_AND_KEYBOARD",
-            "READ_INSTALLED_APPS",
-            "READ_LGE_SDX",
-            "READ_NOTIFICATIONS",
-            "SEARCH",
-            "WRITE_SETTINGS",
-            "WRITE_NOTIFICATION_ALERT",
-            "CONTROL_POWER",
-            "READ_CURRENT_CHANNEL",
-            "READ_RUNNING_APPS",
-            "READ_UPDATE_INFO",
-            "UPDATE_FROM_REMOTE_APP",
-            "READ_LGE_TV_INPUT_EVENTS",
-            "READ_TV_CURRENT_TIME",
-            "CONTROL_AUDIO"  # ← Add here if missing!
-        ],
-        "serial": "2f930e2d2cfe083771f68e4fe7bb07"
-    },
-    "permissions": [
-        "LAUNCH",
-        "LAUNCH_WEBAPP",
-        "APP_TO_APP",
-        "CLOSE",
-        "TEST_OPEN",
-        "TEST_PROTECTED",
-        "CONTROL_AUDIO",  # ← Must be here for volume read/set
-        "CONTROL_DISPLAY",
-        "CONTROL_INPUT_JOYSTICK",
-        "CONTROL_INPUT_MEDIA_RECORDING",
-        "CONTROL_INPUT_MEDIA_PLAYBACK",
-        "CONTROL_INPUT_TV",
-        "CONTROL_POWER",
-        "READ_APP_STATUS",
-        "READ_CURRENT_CHANNEL",
-        "READ_INPUT_DEVICE_LIST",
-        "READ_NETWORK_STATE",
-        "READ_RUNNING_APPS",
-        "READ_TV_CHANNEL_LIST",
-        "WRITE_NOTIFICATION_TOAST",
-        "READ_POWER_STATE",
-        "READ_COUNTRY_INFO"
-    ],
-    "signatures": [
-        {
-            "signatureVersion": 1,
-            "signature": "eyJhbGdvcml0aG0iOiJSU0EtU0hBMjU2Iiwia2V5SWQiOiJ0ZXN0LXNpZ25pbmctY2VydCIsInNpZ25hdHVyZVZlcnNpb24iOjF9.hrVRgjCwXVvE2OOSpDZ58hR+59aFNwYDyjQgKk3auukd7pcegmE2CzPCa0bJ0ZsRAcKkCTJrWo5iDzNhMBWRyaMOv5zWSrthlf7G128qvIlpMT0YNY+n/FaOHE73uLrS/g7swl3/qH/BGFG2Hu4RlL48eb3lLKqTt2xKHdCs6Cd4RMfJPYnzgvI4BNrFUKsjkcu+WD4OO2A27Pq1n50cMchmcaXadJhGrOqH5YmHdOCj5NSHzJYrsW0HPlpuAx/ECMeIZYDh6RMqaFM2DXzdKX9NmmyqzJ3o/0lkk/N97gfVRLW5hA29yeAwaCViZNCP8iC9aO0q9fQojoa7NQnAtw=="
+                    "type": "register",
+                    "id": "register_0",
+                    "payload": {
+                    "forcePairing": False,
+                    "pairingType": "PROMPT",
+                    "manifest": {
+                        "manifestVersion": 1,
+                        "appVersion": "1.1",
+                        "signed": {
+                            "created": "20140509",
+                            "appId": "com.lge.test",
+                            "vendorId": "com.lge",
+                            "localizedAppNames": {
+                                "": "LG Remote App",
+                                "ko-KR": "LG 리모컨 앱",
+                                "zxx-XX": "LG Rэмотэ Aпп"
+                            },
+                            "localizedVendorNames": {"": "LG Electronics"},
+                            "permissions": [
+                                "TEST_SECURE",
+                                "CONTROL_INPUT_TEXT",
+                                "CONTROL_MOUSE_AND_KEYBOARD",
+                                "READ_INSTALLED_APPS",
+                                "READ_LGE_SDX",
+                                "READ_NOTIFICATIONS",
+                                "SEARCH",
+                                "WRITE_SETTINGS",
+                                "WRITE_NOTIFICATION_ALERT",
+                                "CONTROL_POWER",
+                                "READ_CURRENT_CHANNEL",
+                                "READ_RUNNING_APPS",
+                                "READ_UPDATE_INFO",
+                                "UPDATE_FROM_REMOTE_APP",
+                                "READ_LGE_TV_INPUT_EVENTS",
+                                "READ_TV_CURRENT_TIME",
+                                "CONTROL_AUDIO"  # ← Add here if missing!
+                            ],
+                            "serial": "2f930e2d2cfe083771f68e4fe7bb07"
+                        },
+                        "permissions": [
+                            "LAUNCH",
+                            "LAUNCH_WEBAPP",
+                            "APP_TO_APP",
+                            "CLOSE",
+                            "TEST_OPEN",
+                            "TEST_PROTECTED",
+                            "CONTROL_AUDIO",  # ← Must be here for volume read/set
+                            "CONTROL_DISPLAY",
+                            "CONTROL_INPUT_JOYSTICK",
+                            "CONTROL_INPUT_MEDIA_RECORDING",
+                            "CONTROL_INPUT_MEDIA_PLAYBACK",
+                            "CONTROL_INPUT_TV",
+                            "CONTROL_POWER",
+                            "READ_APP_STATUS",
+                            "READ_CURRENT_CHANNEL",
+                            "READ_INPUT_DEVICE_LIST",
+                            "READ_NETWORK_STATE",
+                            "READ_RUNNING_APPS",
+                            "READ_TV_CHANNEL_LIST",
+                            "WRITE_NOTIFICATION_TOAST",
+                            "READ_POWER_STATE",
+                            "READ_COUNTRY_INFO"
+                        ],
+                        "signatures": [
+                            {
+                                "signatureVersion": 1,
+                                "signature": "eyJhbGdvcml0aG0iOiJSU0EtU0hBMjU2Iiwia2V5SWQiOiJ0ZXN0LXNpZ25pbmctY2VydCIsInNpZ25hdHVyZVZlcnNpb24iOjF9.hrVRgjCwXVvE2OOSpDZ58hR+59aFNwYDyjQgKk3auukd7pcegmE2CzPCa0bJ0ZsRAcKkCTJrWo5iDzNhMBWRyaMOv5zWSrthlf7G128qvIlpMT0YNY+n/FaOHE73uLrS/g7swl3/qH/BGFG2Hu4RlL48eb3lLKqTt2xKHdCs6Cd4RMfJPYnzgvI4BNrFUKsjkcu+WD4OO2A27Pq1n50cMchmcaXadJhGrOqH5YmHdOCj5NSHzJYrsW0HPlpuAx/ECMeIZYDh6RMqaFM2DXzdKX9NmmyqzJ3o/0lkk/N97gfVRLW5hA29yeAwaCViZNCP8iC9aO0q9fQojoa7NQnAtw=="
+                            }
+                        ]
+                    }
+                        }
         }
-    ]
-}
-    }
-}
         if self.client_key:
             register_msg["payload"]["client-key"] = self.client_key
             print("Using saved client-key – no prompt!")
@@ -107,11 +132,10 @@ class WebOSClient:
             resp_dict = json.loads(resp)
             print("TV:", resp)
             if resp_dict.get("type") == "registered":
-                if not self.client_key:  # Save new key
-                    self.client_key = resp_dict["payload"].get("client-key")
-                    with open('client_key.txt', 'w') as f:
-                        f.write(self.client_key)
-                    print(f"Saved new key to client_key.txt: {self.client_key}")
+                client_key=resp_dict["payload"].get("client-key")
+                if client_key and self.client_key != client_key:  # Save new key
+                    new_key=client_key
+                    self.save_client_key(new_key=new_key)
                 break
             elif resp_dict.get("type") == "error":
                 print("Error:", resp_dict)
@@ -139,7 +163,7 @@ class WebOSClient:
             print("Error:", resp_dict)
             return None
         return resp_dict.get("payload", resp_dict)  # Return data
-
+    
     async def close(self):
         if self.ws:
             await self.ws.close()
