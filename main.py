@@ -9,7 +9,7 @@ async def main():
         tv_ip = tv_info.get('ip')
         connector = client.WebOSClient(f"{tv_ip}")  # Your IP
         await connector.connect()
-        await connector.list_apps()
+        # await connector.list_apps()
         await connector.close()
     else:
         print("No LG TV found. Check network/TV is on.")

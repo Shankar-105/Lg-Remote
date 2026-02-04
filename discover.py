@@ -7,18 +7,19 @@ from typing import Optional, Dict, List
 def discover_lg_tv(timeout: int = 10) -> Optional[Dict[str, str]]:
     """
     Discover LG webOS TV on the local network via SSDP/UPnP.
-    
     Returns a dict with 'ip', 'friendly_name', 'model_name' if found, else None.
-    Prints debug info for troubleshooting.
     """
+    # UPnP devices basically listen on a multicaste ip
     multicast_group = '239.255.255.250'
+    # which uses the UDP protocol on port '1900'
     port = 1900
+    # basically a message to search these SSDP over UPnP devices
     MSEARCH_MSG = (
         'M-SEARCH * HTTP/1.1\r\n'
         'HOST: 239.255.255.250:1900\r\n'
         'MAN: "ssdp:discover"\r\n'
         'MX: 5\r\n'
-        'ST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n'  # LG TVs respond to this
+        'ST: urn:schemas-upnp-org:device:MediaRenderer:1\r\n'  # LG TVs respond to this MediaRenderer!
         'USER-AGENT: UDAP/2.0\r\n'  # Required for LG UDAP/UPnP
         '\r\n'
     ).encode('utf-8')
@@ -38,7 +39,7 @@ def discover_lg_tv(timeout: int = 10) -> Optional[Dict[str, str]]:
     while time.time() - start_time < timeout:
         try:
             data, addr = sock.recvfrom(1024)
-            response = data.decode('utf-8', errors='ignore')
+            response = data.decode('utf-8',errors='ignore')
             print(f"\nReceived response from {addr}:\n{response}")
             
             # Parse LOCATION from response
@@ -53,16 +54,19 @@ def discover_lg_tv(timeout: int = 10) -> Optional[Dict[str, str]]:
                 print(f"Location of XML File found: {location}")
                 # Fetch and parse XML
                 try:
+                    # http/get request to the specified location
                     xml_response = requests.get(location,timeout=5)
                     xml_response.raise_for_status()
                     xml_text = xml_response.text
-                    # print(f"XML content (full):\n{xml_text}")  # Print full for debug
+                    # you may uncomment the below print statement if you would like to see the XML
+                    # print(f"XML content (full):\n{xml_text}")  
                     
+                    # format the XML so that it's readable as well as iterable
                     tree = ET.ElementTree(ET.fromstring(xml_text))
                     root = tree.getroot()
                     
                     # Use iter with full namespaced tag to extract reliably
-                    upnp_ns = '{urn:schemas-upnp-org:device-1-0}'
+                    upnp_ns = '{urn:schemas-upnp-org:device-1-0}' 
                     manuf_text = ''
                     model_text = ''
                     friendly_text = 'Unknown'
@@ -95,12 +99,12 @@ def discover_lg_tv(timeout: int = 10) -> Optional[Dict[str, str]]:
                 except Exception as e:
                     print(f"Error fetching/parsing XML from {location}: {e}")
         except socket.timeout:
-            continue  # Loop until timeout
+            continue  # Loop until timeout,this may result in repeated results
     
     sock.close()
-    
     if potential_devices:
         print(f"Found {len(potential_devices)} potential LG TVs. Returning first one.")
+        # returning the first one
         return potential_devices[0]
     else:
         print("No LG webOS TV found after timeout.")
