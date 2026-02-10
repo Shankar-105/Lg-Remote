@@ -1,107 +1,189 @@
-import websockets,json,ssl,os
+import asyncio
+import websockets
+import json
+import ssl
+import os
 from dotenv import set_key, find_dotenv
 from config import settings
-from register_payload import register_msg
 
 class WebOSClient:
 
-    def __init__(self,tv_ip,client_key_file=settings.client_key):
-        self.tv_ip = tv_ip                # tv ip address
-        #  the WebOs LG TV is listening on wss on 3001 port
-        # so we will be sending a websocket request to the TV
-        self.uri = f"wss://{tv_ip}:3001"   # url to connect
-        self.client_key = client_key_file  # load client key from '.env'
-        self.ws = None                     # currently we aren't connected so None
-        self.request_id = 0                # Counter for unique ID's
-        # rewriting SSL, in simple words we are telling the TV 
-        # you can trust me and return the client-token and permit me to control you
+    def __init__(self, tv_ip, client_key=settings.client_key):
+        self.tv_ip = tv_ip
+        self.uri = f"wss://{tv_ip}:3001"
+        self.client_key = client_key
+        self.ws = None
+        self.input_ws = None
+        self.request_id = 0
         self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         self.ssl_context.check_hostname = False
         self.ssl_context.verify_mode = ssl.CERT_NONE
 
-    # used to save the client-key to the .env dynamically
-    def save_client_key(self,new_key: str):
-        """Update or add CLIENT_KEY to .env using python-dotenv"""
-        dotenv_path = find_dotenv(usecwd=True)  # Finds .env in current dir or parents
+    def save_client_key(self, new_key: str):
+        dotenv_path = find_dotenv(usecwd=True)
         if not dotenv_path:
             dotenv_path = os.path.join(os.getcwd(), ".env")
-            # Create empty .env if missing
             open(dotenv_path, 'a').close()
 
-        # set_key returns (success, key, old_value)
         success, key, old = set_key(
             dotenv_path=dotenv_path,
             key_to_set="CLIENT_KEY",
             value_to_set=new_key,
-            quote_mode="always",   
+            quote_mode="always",
             export=False
         )
-
         if success:
-            print(f"Updated CLIENT_KEY in .env → {new_key}")
+            print(f"🎉 Updated CLIENT_KEY in .env → {new_key}")
             self.client_key = new_key
-            settings.client_key = new_key  # if you want settings obj updated
+            settings.client_key = new_key
         else:
             print("Failed to update .env – check permissions or path")
-            
-    # connection method used intially to connect to the TV
-    async def connect(self):
-        self.ws = await websockets.connect(self.uri, ping_interval=20, ping_timeout=20, ssl=self.ssl_context)
+
+    async def connect(self, force_repair=False):
+        self.ws = await websockets.connect(self.uri, ping_interval=600, ping_timeout=600, ssl=self.ssl_context)
         print(f"Connected to {self.uri}!")
 
-        # Register (with key if we have it)
-        
-        if self.client_key:
-            register_msg["payload"]["client-key"] = self.client_key
-            print("Using saved client-key – no prompt!")
+        register_payload = {
+            "forcePairing": force_repair or not self.client_key,
+            "pairingType": "PROMPT",
+            "manifest": {
+                "appVersion": "1.1",
+                "manifestVersion": 1,
+                "permissions": [  
+                    "LAUNCH",
+                    "LAUNCH_WEBAPP",
+                    "APP_TO_APP",
+                    "CLOSE",
+                    "TEST_OPEN",
+                    "TEST_PROTECTED",
+                    "CONTROL_AUDIO",
+                    "CONTROL_DISPLAY",
+                    "CONTROL_INPUT_JOYSTICK",
+                    "CONTROL_INPUT_MEDIA_RECORDING",
+                    "CONTROL_INPUT_MEDIA_PLAYBACK",
+                    "CONTROL_INPUT_TV",
+                    "CONTROL_POWER",
+                    "CONTROL_TV_SCREEN",
+                    "READ_APP_STATUS",
+                    "READ_CURRENT_CHANNEL",
+                    "READ_INPUT_DEVICE_LIST",
+                    "READ_NETWORK_STATE",
+                    "READ_RUNNING_APPS",
+                    "READ_TV_CHANNEL_LIST",
+                    "WRITE_NOTIFICATION_TOAST",
+                    "READ_POWER_STATE",
+                    "READ_COUNTRY_INFO",
+                    "CONTROL_INPUT_TEXT",
+                    "CONTROL_MOUSE_AND_KEYBOARD",  
+                    "READ_INSTALLED_APPS",
+                    "READ_SETTINGS",
+                    "READ_STORAGE_DEVICE_LIST",
+                ],
+                "signatures": [
+                    {
+                        "signature": (
+                            "eyJhbGdvcml0aG0iOiJSU0EtU0hBMjU2Iiwia2V5SWQiOiJ0ZXN0LXNpZ25p"
+                            "bmctY2VydCIsInNpZ25hdHVyZVZlcnNpb24iOjF9.hrVRgjCwXVvE2OOSpDZ"
+                            "58hR+59aFNwYDyjQgKk3auukd7pcegmE2CzPCa0bJ0ZsRAcKkCTJrWo5iDz"
+                            "NhMBWRyaMOv5zWSrthlf7G128qvIlpMT0YNY+n/FaOHE73uLrS/g7swl3/q"
+                            "H/BGFG2Hu4RlL48eb3lLKqTt2xKHdCs6Cd4RMfJPYnzgvI4BNrFUKsjkcu+W"
+                            "D4OO2A27Pq1n50cMchmcaXadJhGrOqH5YmHdOCj5NSHzJYrsW0HPlpuAx/ECM"
+                            "eIZYDh6RMqaFM2DXzdKX9NmmyqzJ3o/0lkk/N97gfVRLW5hA29yeAwaCViZN"
+                            "CP8iC9aO0q9fQojoa7NQnAtw=="
+                        ),
+                        "signatureVersion": 1,
+                    }
+                ],
+                "signed": {
+                    "appId": "com.lge.test",
+                    "created": "20140509",
+                    "localizedAppNames": {
+                        "": "LG Remote App",
+                        "ko-KR": "리모컨 앱",
+                        "zxx-XX": "ЛГ Rэмotэ AПП",
+                    },
+                    "localizedVendorNames": {"": "LG Electronics"},
+                    "permissions": [
+                        "TEST_SECURE",
+                        "CONTROL_INPUT_TEXT",
+                        "CONTROL_MOUSE_AND_KEYBOARD",
+                        "READ_INSTALLED_APPS",
+                        "READ_LGE_SDX",
+                        "READ_NOTIFICATIONS",
+                        "SEARCH",
+                        "WRITE_SETTINGS",
+                        "WRITE_NOTIFICATION_ALERT",
+                        "CONTROL_POWER",
+                        "READ_CURRENT_CHANNEL",
+                        "READ_RUNNING_APPS",
+                        "READ_UPDATE_INFO",
+                        "UPDATE_FROM_REMOTE_APP",
+                        "READ_LGE_TV_INPUT_EVENTS",
+                        "READ_TV_CURRENT_TIME",
+                    ],
+                    "serial": "2f930e2d2cfe083771f68e4fe7bb07",
+                    "vendorId": "com.lge",
+                },
+            },
+        }
+
+        if self.client_key and not force_repair:
+            register_payload["client-key"] = self.client_key
+            print("Using saved client-key")
+        else:
+            print("Forcing pairing prompt - ACCEPT ON TV WITH REMOTE!")
+
+        register_msg = {
+            "type": "register",
+            "id": "register_0",
+            "payload": register_payload
+        }
 
         await self.ws.send(json.dumps(register_msg))
         print("Sent register!")
 
-        # Handle responses until registered
         while True:
             resp = await self.ws.recv()
             resp_dict = json.loads(resp)
             print("TV:", resp)
-            # if TV permits you this case is hit
             if resp_dict.get("type") == "registered":
-                client_key=resp_dict["payload"].get("client-key")
-                if client_key and self.client_key != client_key:  # Save new key
-                    new_key=client_key
-                    self.save_client_key(new_key=new_key)
+                client_key = resp_dict["payload"].get("client-key")
+                if client_key and self.client_key != client_key:
+                    self.save_client_key(client_key)
+                print("Registered successfully!")
                 break
-            # check the register_msg ,TV ip, port and the returned error message
             elif resp_dict.get("type") == "error":
                 print("Error:", resp_dict)
+                if "permissions" in str(resp_dict).lower():
+                    raise PermissionError("Permissions error - clear TV pairings (Settings > Devices > External Devices > Remove all), reboot TV, then run with force_repair=True")
                 raise Exception("Register failed")
-    # used to send commands to TV
-    async def send_command(self,uri,payload=None):
+
+    async def send_command(self, uri, payload=None):
         self.request_id += 1
-        msg_type = "request"
         msg = {
-            "type": msg_type,
+            "type": "request",
             "id": f"cmd_{self.request_id}",
             "uri": uri,
             "payload": payload or {}
         }
         await self.ws.send(json.dumps(msg))
-        print(f"Sent {msg_type} to {uri}")
+        print(f"Sent request to {uri}")
 
-        # Wait for response
         resp = await self.ws.recv()
         resp_dict = json.loads(resp)
+        print(f"Response: {resp_dict}")
 
         if resp_dict.get("id") != msg["id"]:
             print("ID mismatch!")
             return None
-        
         if resp_dict.get("type") == "error":
-            print("That's an Error:",resp_dict)
+            print("TV Error:", resp_dict)
+            if "permissions" in str(resp_dict).lower():
+                raise PermissionError(f"Insufficient permissions for {uri}")
             return None
-        
-        print(f"PayLoad of the Above Response From TV {resp_dict.get("payload",resp_dict)}")
-        return resp_dict.get("payload",resp_dict)  # Return data
-    
+        print(f"Payload: {resp_dict.get('payload', resp_dict)}")
+        return resp_dict.get("payload", resp_dict)
+
     # AUDIO RELATED ENDPOINTS
     async def get_mute(self):
         return await self.send_command("ssap://audio/getMute")
@@ -188,8 +270,63 @@ class WebOSClient:
     async def turn_on_screen(self):       
         return await self.send_command("ssap://com.webos.service.tvpower/power/turnOnScreen")
     
+    async def connect_input(self):
+        """Get and connect to the pointer/input websocket."""
+        if self.input_ws:
+            print("Input socket already connected!")
+            return
+
+        response = await self.send_command("ssap://com.webos.service.networkinput/getPointerInputSocket")
+        if not response or "socketPath" not in response:
+            raise Exception("Failed to get input socket path")
+        
+        sock_path = response["socketPath"]
+        print(f"Got input socket: {sock_path}")
+
+        self.input_ws = await websockets.connect(sock_path, ping_interval=600, ping_timeout=600, ssl=self.ssl_context)
+        print(f"Connected to input socket {sock_path}!")
+
+    async def disconnect_input(self):
+        """Close the input websocket."""
+        if self.input_ws:
+            await self.input_ws.close()
+            self.input_ws = None
+            print("Input socket closed.")
+
+    async def _send_input_button(self, button_name: str):
+        """Internal helper to send a button over input ws."""
+        if not self.input_ws:
+            await self.connect_input()  # Auto-connect if needed
+        
+        payload = f"type:button\nname:{button_name}\n\n"
+        await self.input_ws.send(payload)
+        print(f"Sent button: {button_name}")
+
+    # NAVIGATION / CURSOR CONTROL (for apps like YouTube)
+    async def cursor_up(self):
+        await self._send_input_button("UP")
+    
+    async def cursor_down(self):
+        await self._send_input_button("DOWN")
+    
+    async def cursor_left(self):
+        await self._send_input_button("LEFT")
+    
+    async def cursor_right(self):
+        await self._send_input_button("RIGHT")
+    
+    async def cursor_click(self):
+        await self._send_input_button("ENTER")
+    
+    async def cursor_back(self):
+        await self._send_input_button("BACK")
+    
+    async def go_home(self):
+        await self._send_input_button("HOME")
+    
     # close the socket Gracefully
     async def close(self):
+        await self.disconnect_input()
         if self.ws:
             print("Bye byee Socket Closing")
             await self.ws.close()

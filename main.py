@@ -28,7 +28,7 @@ MENU = {
             "4": ("Launch Netflix", "launch_netflix"),
             "5": ("Launch YouTube", "launch_youtube"),
             "6": ("Launch Prime Video", "launch_prime_video"),
-            "7": ("Launch JioHotstar", "launch_jio_hotstar"),
+            "7": ("Launch JioHotstar", lambda conn: conn.launch_app("jiohunterhotstar")),
             "8": ("Launch Custom App", "launch_app_prompt"),
         }
     },
@@ -37,15 +37,19 @@ MENU = {
         "methods": {
             "1": ("Get Channel List", "get_channel_list"),
             "2": ("Get Current Channel", "get_current_channel"),
-            "3": ("Open Channel", "open_channel_prompt"),
-            "4": ("Channel Up", "channel_up"),
-            "5": ("Channel Down", "channel_down"),
-            "6": ("Get External Inputs", "get_external_inputs"),
-            "7": ("Switch Input", "switch_input_prompt"),
+            "3": ("Get External Inputs", "get_external_inputs"),
+            "4": ("Switch Input", "switch_input_prompt"),
+            "5": ("Navigate Up", "cursor_up"),
+            "6": ("Navigate Down", "cursor_down"),
+            "7": ("Navigate Left", "cursor_left"),
+            "8": ("Navigate Right", "cursor_right"),
+            "9": ("Press OK/Enter", "cursor_click"),
+            "10": ("Go Back (in app)", "cursor_back"),
+            "11": ("Go Home", "go_home"),
         }
     },
     "4": {
-        "name": "▶️ Media Control",
+        "name": "▶️  Media Control",
         "methods": {
             "1": ("Play", "media_play"),
             "2": ("Pause", "media_pause"),
@@ -111,9 +115,6 @@ async def execute_method(connector, category_key, method_key):
         elif method == "launch_app_prompt":
             app_id = input("Enter app ID: ")
             result = await connector.launch_app(app_id)
-        elif method == "open_channel_prompt":
-            channel_id = input("Enter channel ID: ")
-            result = await connector.open_channel(channel_id)
         elif method == "switch_input_prompt":
             input_id = input("Enter input ID (e.g., HDMI1, AV1): ")
             result = await connector.switch_input(input_id)
