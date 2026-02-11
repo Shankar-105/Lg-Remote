@@ -33,7 +33,7 @@ class WebOSClient:
             export=False
         )
         if success:
-            print(f"🎉 Updated CLIENT_KEY in .env → {new_key}")
+            print(f"Updated CLIENT_KEY in .env → {new_key}")
             self.client_key = new_key
             settings.client_key = new_key
         else:

@@ -140,7 +140,6 @@ async def console_menu(connector):
         category_choice = input("Select category (0 to exit): ").strip()
         
         if category_choice == "0":
-            print("👋 Exiting...")
             break
         
         category = display_category_menu(category_choice)
@@ -162,7 +161,7 @@ async def main():
         
         try:
             await connector.connect()
-            print("🎯 Connected! Starting console menu...\n")
+            print("Connected! Starting console menu...\n")
             await console_menu(connector)
         finally:
             await connector.close()
