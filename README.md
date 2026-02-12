@@ -6,6 +6,12 @@ The **WebOS LG TV Remote Control Console Simulator** is an interactive command-l
 
 This tool leverages the **WebSocket protocol** and provides a user-friendly menu-driven interface, making it easy to interact with your television without needing deep technical knowledge of WebOS APIs.
 
+## ✨ Project Note
+Please note that this is **not a production-ready application**, but a passionate **student project** created to explore the vast world of networking and automation.
+*   **A Journey of Learning**: Built with curiosity to understand how devices "talk" to each other.
+*   **Experimental Nature**: Designed for educational exploration and personal hobby use.
+*   **Growth Mindset**: Every line of code represents a step forward in a student's journey into the tech world.
+
 ## 🛠️ How to Use the Console Simulator
 
 Follow these steps to set up and start controlling your TV:
@@ -44,9 +50,9 @@ However, for **Input Operations** (cursor movement, button presses), the TV requ
 
 ## 🙏 Thank You
 
-I would like to extend my heartfelt gratitude to everyone who has taken the time to explore and use this WebOS LG TV Remote Control Console Simulator. Creating this tool has been a rewarding journey, and I hope it brings convenience to your viewing experience. 🌟
+I would like to extend my heartfelt gratitude to everyone who has taken the time to explore and use this WebOS LG TV Remote Control Console Simulator. Exploring these kind of concepts is Beautiful for a Student, and I hope it brings convenience to your viewing experience. 🌟
 
-This project demonstrates the power of open protocols and how they can be leveraged to build intuitive bridges between your devices. Thank you for your interest and support! 🚀
+As a student developer, your interest in this project means the world to me. It serves as a reminder that even small, experimental scripts can spark great learning experiences. This project demonstrates the power of open protocols and how they can be leveraged to build intuitive bridges between your devices.
 
-**M Bhavani Shankar**
+**M.Bhavani Shankar Student at Anits Collage Vizag Andhra Pradesh India**
 
